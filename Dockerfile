@@ -28,6 +28,7 @@ RUN apk add --no-cache \
     texlive \
     texmf-dist-latexextra \
     texmf-dist-fontsrecommended \
+    openssl \
     && rm -rf /var/cache/apk/*
 
 ENV NODE_ENV=production
@@ -54,4 +55,5 @@ ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
 # Push DB schema then start — DATABASE_URL is available here at runtime
-CMD ["sh", "-c", "npx prisma db push && node server.js"]
+ENV PRISMA_CLI_BINARY_TARGETS="linux-musl-openssl-3.0.x"
+CMD ["sh", "-c", "npx prisma db push --schema=./prisma/schema.prisma && node server.js"]
