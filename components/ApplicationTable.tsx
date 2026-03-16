@@ -7,7 +7,7 @@ interface Application {
   id: string
   companyName: string
   jobRole: string
-  createdAt: string
+  createdAt: Date | string
   generatedPdfPath: string | null
   latexContent: string | null
   atsScoreBefore: number | null

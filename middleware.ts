@@ -1,17 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifySession } from '@/lib/auth'
+import { jwtVerify } from 'jose'
 
 const PUBLIC_PATHS = ['/login', '/api/auth/send-code', '/api/auth/verify']
+
+const JWT_SECRET = new TextEncoder().encode(
+  process.env.AUTH_SECRET || 'fallback-secret-change-this'
+)
+
+async function verifyToken(token: string) {
+  try {
+    const { payload } = await jwtVerify(token, JWT_SECRET)
+    return payload
+  } catch {
+    return null
+  }
+}
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
 
-  // Allow public paths
   if (PUBLIC_PATHS.some(p => pathname.startsWith(p))) {
     return NextResponse.next()
   }
 
-  // Allow static files and Next.js internals
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/favicon') ||
@@ -20,13 +31,12 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next()
   }
 
-  // Check session for protected routes
   const token = req.cookies.get('session')?.value
   if (!token) {
     return NextResponse.redirect(new URL('/login', req.url))
   }
 
-  const session = await verifySession(token)
+  const session = await verifyToken(token)
   if (!session) {
     const response = NextResponse.redirect(new URL('/login', req.url))
     response.cookies.delete('session')
