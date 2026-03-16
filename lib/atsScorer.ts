@@ -82,7 +82,7 @@ export function keywordScore(resumeText: string, jobDescription: string): ATSSco
     'also', 'into', 'more', 'some', 'than', 'then', 'them', 'these',
   ])
 
-  const jdWords = [...new Set(
+  const jdWords = Array.from(new Set(
     jdLower
       .replace(/[^a-z0-9\s+#.]/g, ' ')
       .split(/\s+/)
