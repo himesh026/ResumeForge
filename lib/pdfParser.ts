@@ -113,7 +113,7 @@ function extractUrlsFromPdfBuffer(buffer: Buffer): ExtractedLink[] {
 function extractUrlsFromText(text: string): string[] {
   const urlPattern = /https?:\/\/[^\s,)<>\]"']+/gi
   const matches = text.match(urlPattern) || []
-  return [...new Set(matches.map(u => u.replace(/[.,;:]+$/, '')))]
+  return Array.from(new Set(matches.map(u => u.replace(/[.,;:]+$/, ''))))
 }
 
 function isValidUrl(url: string): boolean {
