@@ -34,4 +34,4 @@ ENV HOSTNAME="0.0.0.0"
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-CMD ["sh", "-c", "npx prisma db push && node .next/standalone/server.js"]
+CMD ["sh", "-c", "npx prisma db push --schema=/app/prisma/schema.prisma && node .next/standalone/server.js"]
