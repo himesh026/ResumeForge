@@ -33,5 +33,9 @@ ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV NEXT_PUBLIC_URL=https://resumeforge-production-1d75.up.railway.app
 
-CMD ["sh", "-c", "npx prisma db push --schema=/app/prisma/schema.prisma && node .next/standalone/server.js"]
+RUN cp -r .next/static .next/standalone/.next/static && \
+    cp -r public .next/standalone/public 2>/dev/null || true
+    
+CMD ["sh", "-c", "npx prisma db push --schema=/app/prisma/schema.prisma && node server.js"]
