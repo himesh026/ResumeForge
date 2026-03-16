@@ -1,59 +1,42 @@
-# ─────────────────────────────────────────
-# Stage 1: Dependencies
-# ─────────────────────────────────────────
-FROM node:20-alpine AS deps
-WORKDIR /app
-COPY package.json ./
-RUN npm install --frozen-lockfile
+FROM node:20-alpine
 
-# ─────────────────────────────────────────
-# Stage 2: Builder
-# ─────────────────────────────────────────
-FROM node:20-alpine AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
-# Only generate client — no db push at build time (no DATABASE_URL yet)
-RUN npx prisma generate
-RUN npm run build
-
-# ─────────────────────────────────────────
-# Stage 3: Runner
-# ─────────────────────────────────────────
-FROM node:20-alpine AS runner
 WORKDIR /app
 
-# Install TeX Live for PDF compilation
+# Install system dependencies
 RUN apk add --no-cache \
+    openssl \
+    openssl-dev \
+    libc6-compat \
     texlive \
     texmf-dist-latexextra \
     texmf-dist-fontsrecommended \
-    openssl \
     && rm -rf /var/cache/apk/*
 
-ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
+# Copy package and install dependencies
+COPY package.json ./
+RUN npm install --frozen-lockfile
 
-# Create non-root user
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+# Copy all source files
+COPY . .
 
-# Copy built app
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+# Set Prisma binary target for Alpine
+ENV PRISMA_CLI_BINARY_TARGETS="linux-musl-openssl-3.0.x"
 
-# Create dirs for uploads and outputs
-RUN mkdir -p uploads outputs && chown -R nextjs:nodejs uploads outputs prisma
+# Generate Prisma client
+RUN npx prisma generate
 
-USER nextjs
+# Build Next.js app
+RUN npm run build
 
+# Create dirs for uploads/outputs
+RUN mkdir -p uploads outputs /app/prisma
+
+# Expose port
 EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 
-# Push DB schema then start — DATABASE_URL is available here at runtime
-ENV PRISMA_CLI_BINARY_TARGETS="linux-musl-openssl-3.0.x"
-CMD ["sh", "-c", "npx prisma db push --schema=./prisma/schema.prisma && node server.js"]
+# Push DB schema and start
+CMD ["sh", "-c", "npx prisma db push && node .next/standalone/server.js"]
