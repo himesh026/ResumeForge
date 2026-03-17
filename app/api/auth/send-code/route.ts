@@ -29,11 +29,14 @@ export async function POST(req: NextRequest) {
     })
 
     const code = generateVerificationCode()
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000)
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000) // 30 minutes
 
-    await prisma.authToken.create({
+    const token = await prisma.authToken.create({
       data: { token: code, userId: user.id, expiresAt },
     })
+
+    // Debug log to verify DB is persisting
+    console.log(`[AUTH] Token created for ${normalizedEmail}, tokenId: ${token.id}, expires: ${expiresAt.toISOString()}, DB: ${process.env.DATABASE_URL}`)
 
     await sendVerificationEmail(normalizedEmail, code)
 

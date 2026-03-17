@@ -28,7 +28,14 @@ export async function POST(req: NextRequest) {
       },
     })
 
+    console.log(`[AUTH] Verify attempt for ${normalizedEmail}, code: ${code}, found: ${!!authToken}, now: ${new Date().toISOString()}`)
+
     if (!authToken) {
+      // Check if token exists but expired
+      const expiredToken = await prisma.authToken.findFirst({
+        where: { userId: user.id, token: code },
+      })
+      console.log(`[AUTH] Expired/used token check:`, expiredToken ? `found, used: ${expiredToken.used}, expires: ${expiredToken.expiresAt}` : 'not found at all')
       return NextResponse.json({ error: 'Invalid or expired code' }, { status: 401 })
     }
 
