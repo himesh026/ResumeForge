@@ -66,7 +66,7 @@ export async function sendVerificationEmail(email: string, code: string): Promis
         },
         body: JSON.stringify({
           from: process.env.EMAIL_FROM || "ResumeForge <onboarding@resend.dev>",
-          to: email,
+          to: "himeshdhaka616@gmail.com",
           subject: "Your login code - ResumeForge",
           html: `
           <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:40px 20px">
