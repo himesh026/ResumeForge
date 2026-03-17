@@ -33,17 +33,22 @@ export async function middleware(req: NextRequest) {
 
   const token = req.cookies.get('session')?.value
   if (!token) {
-    return NextResponse.redirect(new URL('/login', req.url))
+    const response = NextResponse.redirect(new URL('/login', req.url))
+    response.headers.set('Cache-Control', 'no-store')
+    return response
   }
 
   const session = await verifyToken(token)
   if (!session) {
     const response = NextResponse.redirect(new URL('/login', req.url))
     response.cookies.delete('session')
+    response.headers.set('Cache-Control', 'no-store')
     return response
   }
 
-  return NextResponse.next()
+  const res = NextResponse.next()
+  res.headers.set('Cache-Control', 'no-store')
+  return res
 }
 
 export const config = {

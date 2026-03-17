@@ -15,8 +15,15 @@ export default function Navbar({ userEmail }: NavbarProps) {
 
   async function handleLogout() {
     setLoggingOut(true)
-    await fetch('/api/auth/logout', { method: 'POST' })
-    router.push('/login')
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' })
+    } catch {
+      // ignore fetch errors
+    }
+    // Delete cookie on client side too as backup
+    document.cookie = 'session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
+    // Hard redirect with cache bust
+    window.location.href = '/login?t=' + Date.now()
   }
 
   return (
