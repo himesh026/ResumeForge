@@ -11,15 +11,34 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [code, setCode] = useState('')
   const [loading, setLoading] = useState(false)
+  const [resending, setResending] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
+  const [countdown, setCountdown] = useState(0)
 
   useEffect(() => {
-    // Check if already logged in
     fetch('/api/auth/me').then(r => {
       if (r.ok) router.replace('/dashboard')
     })
   }, [router])
+
+  // Countdown timer for resend button
+  useEffect(() => {
+    if (countdown <= 0) return
+    const timer = setTimeout(() => setCountdown(c => c - 1), 1000)
+    return () => clearTimeout(timer)
+  }, [countdown])
+
+  async function sendCode(emailToSend: string) {
+    const res = await fetch('/api/auth/send-code', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: emailToSend }),
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error || 'Failed to send code')
+    return data
+  }
 
   async function handleSendCode(e: React.FormEvent) {
     e.preventDefault()
@@ -30,19 +49,29 @@ export default function LoginPage() {
     }
     setLoading(true)
     try {
-      const res = await fetch('/api/auth/send-code', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Failed to send code')
+      await sendCode(email)
       setStep('code')
-      setMessage('Check your email for a 6-digit code. (In dev mode, check your server console.)')
+      setCountdown(60) // 60 second cooldown before resend
+      setMessage('Check your email for a 6-digit code. It expires in 10 minutes.')
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Something went wrong')
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleResend() {
+    setResending(true)
+    setError('')
+    try {
+      await sendCode(email)
+      setCountdown(60)
+      setCode('')
+      setMessage('New code sent! Check your email.')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to resend')
+    } finally {
+      setResending(false)
     }
   }
 
@@ -89,7 +118,7 @@ export default function LoginPage() {
               </svg>
             </div>
             <span className="font-display text-lg" style={{ color: 'var(--text-primary)' }}>
-              ATS Resume Tailor
+              ResumeForge
             </span>
           </div>
           <h1 className="font-display text-3xl mb-2" style={{ color: 'var(--text-primary)' }}>
@@ -155,12 +184,17 @@ export default function LoginPage() {
                   maxLength={6}
                   inputMode="numeric"
                 />
+                <p className="text-xs mt-1.5" style={{ color: 'var(--text-muted)' }}>
+                  Sent to {email} · Expires in 10 minutes
+                </p>
               </div>
+
               {error && (
                 <p className="text-sm px-3 py-2 rounded-md" style={{ background: 'var(--danger-dim)', color: 'var(--danger)' }}>
                   {error}
                 </p>
               )}
+
               <button
                 type="submit"
                 disabled={loading || code.length !== 6}
@@ -174,14 +208,33 @@ export default function LoginPage() {
               >
                 {loading ? 'Verifying...' : 'Sign in →'}
               </button>
-              <button
-                type="button"
-                onClick={() => { setStep('email'); setCode(''); setError('') }}
-                className="w-full text-sm"
-                style={{ color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}
-              >
-                ← Use a different email
-              </button>
+
+              {/* Resend code button */}
+              <div className="flex items-center justify-between pt-1">
+                <button
+                  type="button"
+                  onClick={() => { setStep('email'); setCode(''); setError('') }}
+                  className="text-sm"
+                  style={{ color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}
+                >
+                  ← Different email
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleResend}
+                  disabled={resending || countdown > 0}
+                  className="text-sm font-medium transition-all"
+                  style={{
+                    color: (resending || countdown > 0) ? 'var(--text-muted)' : 'var(--accent-bright)',
+                    background: 'none',
+                    border: 'none',
+                    cursor: (resending || countdown > 0) ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  {resending ? 'Sending...' : countdown > 0 ? `Resend in ${countdown}s` : 'Resend code'}
+                </button>
+              </div>
             </form>
           )}
         </div>
