@@ -19,12 +19,15 @@ export async function POST(req: NextRequest) {
       create: { email: normalizedEmail },
     })
 
+    // Add 60 minute buffer to handle server clock skew
+    const expiryCheck = new Date(Date.now() - 60 * 60 * 1000)
+
     const authToken = await prisma.authToken.findFirst({
       where: {
         userId: user.id,
         token: code,
         used: false,
-        expiresAt: { gt: new Date() },
+        expiresAt: { gt: expiryCheck },
       },
     })
 
