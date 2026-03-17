@@ -77,6 +77,7 @@ export default function LoginPage() {
 
   async function handleVerify(e: React.FormEvent) {
     e.preventDefault()
+    if (loading) return  // prevent double submit
     setError('')
     if (!code || code.length !== 6) {
       setError('Enter the 6-digit code from your email.')
@@ -91,12 +92,13 @@ export default function LoginPage() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Verification failed')
-      router.replace('/dashboard')
+      // Hard redirect prevents Next.js from re-rendering and re-submitting
+      window.location.href = '/dashboard'
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Something went wrong')
-    } finally {
-      setLoading(false)
+      setLoading(false)  // only re-enable on error
     }
+    // do NOT setLoading(false) on success — keep button disabled during redirect
   }
 
   return (
