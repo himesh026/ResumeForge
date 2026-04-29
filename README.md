@@ -1,4 +1,4 @@
-# ATS Resume Tailo
+# ATS Resume Tailor
 
 AI-powered resume optimization for every job application. Upload your resume, paste a job description, and get a tailored, ATS-optimized LaTeX resume in seconds.
 
